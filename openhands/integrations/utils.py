@@ -6,6 +6,7 @@ from openhands.integrations.bitbucket.bitbucket_service import BitBucketService
 from openhands.integrations.github.github_service import GitHubService
 from openhands.integrations.gitlab.gitlab_service import GitLabService
 from openhands.integrations.provider import ProviderType
+from openhands.integrations.service_types import RequestMethod
 
 
 async def validate_provider_token(
@@ -79,4 +80,5 @@ async def validate_provider_token(
     )
 
     return None
+
 
