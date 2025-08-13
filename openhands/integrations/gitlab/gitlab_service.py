@@ -255,6 +255,15 @@ class GitLabService(BaseGitService, GitService):
                     'variables': variables if variables is not None else {},
                 }
 
+                # Generate and log curl command for GraphQL debugging
+                curl_command = self._generate_curl_command(
+                    url=self.GRAPHQL_URL,
+                    headers=gitlab_headers,
+                    method=RequestMethod.POST,
+                    json_data=payload,
+                )
+                logger.debug(f"GitLab GraphQL request - curl equivalent: {curl_command}")
+
                 response = await client.post(
                     self.GRAPHQL_URL, headers=gitlab_headers, json=payload
                 )
@@ -745,6 +754,7 @@ gitlab_service_cls = os.environ.get(
     'openhands.integrations.gitlab.gitlab_service.GitLabService',
 )
 GitLabServiceImpl = get_impl(GitLabService, gitlab_service_cls)
+
 
 
 
