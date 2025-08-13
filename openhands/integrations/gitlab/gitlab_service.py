@@ -1,9 +1,11 @@
 import os
 from typing import Any
+import urllib.parse
 
 import httpx
 from pydantic import SecretStr
 
+from openhands.core.logger import openhands_logger as logger
 from openhands.integrations.service_types import (
     BaseGitService,
     Branch,
@@ -121,6 +123,46 @@ class GitLabService(BaseGitService, GitService):
         """Extract file path from directory item."""
         return item['path']
 
+    def _generate_curl_command(
+        self,
+        url: str,
+        headers: dict[str, Any],
+        params: dict | None = None,
+        method: RequestMethod = RequestMethod.GET,
+        json_data: dict | None = None,
+    ) -> str:
+        """Generate a curl command equivalent for debugging purposes."""
+        # Start with basic curl command
+        curl_parts = ['curl', '-X', method.value.upper()]
+        
+        # Add headers (mask sensitive information)
+        for key, value in headers.items():
+            if key.lower() == 'authorization':
+                # Mask the token for security
+                if 'Bearer' in str(value):
+                    masked_value = 'Bearer <MASKED_TOKEN>'
+                else:
+                    masked_value = '<MASKED_TOKEN>'
+                curl_parts.extend(['-H', f"'{key}: {masked_value}'"])
+            else:
+                curl_parts.extend(['-H', f"'{key}: {value}'"])
+        
+        # Add JSON data for POST requests
+        if json_data:
+            import json
+            curl_parts.extend(['-d', f"'{json.dumps(json_data)}'"])
+        
+        # Build the final URL with query parameters
+        final_url = url
+        if params:
+            query_string = urllib.parse.urlencode(params)
+            final_url = f"{url}?{query_string}"
+        
+        # Add the URL (quoted for safety)
+        curl_parts.append(f"'{final_url}'")
+        
+        return ' '.join(curl_parts)
+
     async def _make_request(
         self,
         url: str,
@@ -130,6 +172,15 @@ class GitLabService(BaseGitService, GitService):
         try:
             async with httpx.AsyncClient() as client:
                 gitlab_headers = await self._get_gitlab_headers()
+
+                # Generate and log curl command for debugging
+                curl_command = self._generate_curl_command(
+                    url=url,
+                    headers=gitlab_headers,
+                    params=params,
+                    method=method,
+                )
+                logger.debug(f"GitLab API request - curl equivalent: {curl_command}")
 
                 # Make initial request
                 response = await self.execute_request(
@@ -144,6 +195,16 @@ class GitLabService(BaseGitService, GitService):
                 if self.refresh and self._has_token_expired(response.status_code):
                     await self.get_latest_token()
                     gitlab_headers = await self._get_gitlab_headers()
+                    
+                    # Generate and log curl command for retry request
+                    retry_curl_command = self._generate_curl_command(
+                        url=url,
+                        headers=gitlab_headers,
+                        params=params,
+                        method=method,
+                    )
+                    logger.debug(f"GitLab API retry request (after token refresh) - curl equivalent: {retry_curl_command}")
+                    
                     response = await self.execute_request(
                         client=client,
                         url=url,
@@ -194,6 +255,15 @@ class GitLabService(BaseGitService, GitService):
                     'variables': variables if variables is not None else {},
                 }
 
+                # Generate and log curl command for GraphQL debugging
+                curl_command = self._generate_curl_command(
+                    url=self.GRAPHQL_URL,
+                    headers=gitlab_headers,
+                    method=RequestMethod.POST,
+                    json_data=payload,
+                )
+                logger.debug(f"GitLab GraphQL request - curl equivalent: {curl_command}")
+
                 response = await client.post(
                     self.GRAPHQL_URL, headers=gitlab_headers, json=payload
                 )
@@ -202,6 +272,16 @@ class GitLabService(BaseGitService, GitService):
                     await self.get_latest_token()
                     gitlab_headers = await self._get_gitlab_headers()
                     gitlab_headers['Content-Type'] = 'application/json'
+                    
+                    # Generate and log curl command for GraphQL retry request
+                    retry_curl_command = self._generate_curl_command(
+                        url=self.GRAPHQL_URL,
+                        headers=gitlab_headers,
+                        method=RequestMethod.POST,
+                        json_data=payload,
+                    )
+                    logger.debug(f"GitLab GraphQL retry request (after token refresh) - curl equivalent: {retry_curl_command}")
+                    
                     response = await client.post(
                         self.GRAPHQL_URL, headers=gitlab_headers, json=payload
                     )
@@ -684,3 +764,9 @@ gitlab_service_cls = os.environ.get(
     'openhands.integrations.gitlab.gitlab_service.GitLabService',
 )
 GitLabServiceImpl = get_impl(GitLabService, gitlab_service_cls)
+
+
+
+
+
+
