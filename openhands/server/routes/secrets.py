@@ -1,3 +1,4 @@
+import os
 from fastapi import APIRouter, Depends, status
 from fastapi.responses import JSONResponse
 
@@ -110,9 +111,19 @@ async def store_provider_tokens(
 ) -> JSONResponse:
     provider_err_msg = await check_provider_tokens(provider_info, provider_tokens)
     if provider_err_msg:
-        # We don't have direct access to user_id here, but we can log the provider info
+        # Log provider info including GitLab URI details
+        gitlab_info = ""
+        if provider_info.provider_tokens and ProviderType.GITLAB in provider_info.provider_tokens:
+            gitlab_token = provider_info.provider_tokens[ProviderType.GITLAB]
+            if gitlab_token.host:
+                gitlab_info = f" (GitLab URI: {gitlab_token.host})"
+            else:
+                # Check environment variable if no host specified
+                gitlab_host = os.getenv('GITLAB_HOST', 'gitlab.com')
+                gitlab_info = f" (GitLab URI: {gitlab_host})"
+        
         logger.info(
-            f'Returning 401 Unauthorized - Provider token error: {provider_err_msg}'
+            f'Returning 401 Unauthorized - Provider token error: {provider_err_msg}{gitlab_info}'
         )
         return JSONResponse(
             status_code=status.HTTP_401_UNAUTHORIZED,
