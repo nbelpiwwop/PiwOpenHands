@@ -56,6 +56,8 @@ class GitLabService(BaseGitService, GitService):
             self.token = token
 
         # Set URLs based on base_domain or default to gitlab.com
+        # Strip any surrounding quotes from base_domain to prevent malformed URLs
+        base_domain = base_domain.strip('"\'') if base_domain else None
         gitlab_host = base_domain or 'gitlab.com'
         if gitlab_host.startswith(('http://', 'https://')):
             # Use the provided protocol
@@ -764,6 +766,7 @@ gitlab_service_cls = os.environ.get(
     'openhands.integrations.gitlab.gitlab_service.GitLabService',
 )
 GitLabServiceImpl = get_impl(GitLabService, gitlab_service_cls)
+
 
 
 
