@@ -268,11 +268,11 @@ def send_pull_request(
     # Determine default base_domain based on platform
     if base_domain is None:
         if platform == ProviderType.GITHUB:
-            base_domain = 'github.com'
+            base_domain = os.getenv('GITHUB_HOST', 'github.com')
         elif platform == ProviderType.GITLAB:
-            base_domain = 'gitlab.com'
+            base_domain = os.getenv('GITLAB_HOST', 'gitlab.com')
         else:  # platform == ProviderType.BITBUCKET
-            base_domain = 'bitbucket.org'
+            base_domain = os.getenv('BITBUCKET_HOST', 'bitbucket.org')
 
     # Create the appropriate handler based on platform
     handler = None
@@ -418,7 +418,10 @@ def update_existing_pull_request(
 
     # Determine default base_domain based on platform
     if base_domain is None:
-        base_domain = 'github.com' if platform == ProviderType.GITHUB else 'gitlab.com'
+        if platform == ProviderType.GITHUB:
+            base_domain = os.getenv('GITHUB_HOST', 'github.com')
+        else:  # platform == ProviderType.GITLAB
+            base_domain = os.getenv('GITLAB_HOST', 'gitlab.com')
 
     handler = None
     if platform == ProviderType.GITHUB:
@@ -518,7 +521,10 @@ def process_single_issue(
 ) -> None:
     # Determine default base_domain based on platform
     if base_domain is None:
-        base_domain = 'github.com' if platform == ProviderType.GITHUB else 'gitlab.com'
+        if platform == ProviderType.GITHUB:
+            base_domain = os.getenv('GITHUB_HOST', 'github.com')
+        else:  # platform == ProviderType.GITLAB
+            base_domain = os.getenv('GITLAB_HOST', 'gitlab.com')
     if not resolver_output.success and not send_on_failure:
         logger.info(
             f'Issue {resolver_output.issue.number} was not successfully resolved. Skipping PR creation.'
