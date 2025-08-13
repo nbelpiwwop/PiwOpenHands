@@ -195,6 +195,16 @@ class GitLabService(BaseGitService, GitService):
                 if self.refresh and self._has_token_expired(response.status_code):
                     await self.get_latest_token()
                     gitlab_headers = await self._get_gitlab_headers()
+                    
+                    # Generate and log curl command for retry request
+                    retry_curl_command = self._generate_curl_command(
+                        url=url,
+                        headers=gitlab_headers,
+                        params=params,
+                        method=method,
+                    )
+                    logger.debug(f"GitLab API retry request (after token refresh) - curl equivalent: {retry_curl_command}")
+                    
                     response = await self.execute_request(
                         client=client,
                         url=url,
@@ -735,6 +745,7 @@ gitlab_service_cls = os.environ.get(
     'openhands.integrations.gitlab.gitlab_service.GitLabService',
 )
 GitLabServiceImpl = get_impl(GitLabService, gitlab_service_cls)
+
 
 
 
