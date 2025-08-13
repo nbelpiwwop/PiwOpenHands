@@ -272,6 +272,16 @@ class GitLabService(BaseGitService, GitService):
                     await self.get_latest_token()
                     gitlab_headers = await self._get_gitlab_headers()
                     gitlab_headers['Content-Type'] = 'application/json'
+                    
+                    # Generate and log curl command for GraphQL retry request
+                    retry_curl_command = self._generate_curl_command(
+                        url=self.GRAPHQL_URL,
+                        headers=gitlab_headers,
+                        method=RequestMethod.POST,
+                        json_data=payload,
+                    )
+                    logger.debug(f"GitLab GraphQL retry request (after token refresh) - curl equivalent: {retry_curl_command}")
+                    
                     response = await client.post(
                         self.GRAPHQL_URL, headers=gitlab_headers, json=payload
                     )
@@ -754,6 +764,7 @@ gitlab_service_cls = os.environ.get(
     'openhands.integrations.gitlab.gitlab_service.GitLabService',
 )
 GitLabServiceImpl = get_impl(GitLabService, gitlab_service_cls)
+
 
 
 
