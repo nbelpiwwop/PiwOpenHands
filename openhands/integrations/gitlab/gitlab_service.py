@@ -1,9 +1,11 @@
 import os
 from typing import Any
+import urllib.parse
 
 import httpx
 from pydantic import SecretStr
 
+from openhands.core.logger import openhands_logger as logger
 from openhands.integrations.service_types import (
     BaseGitService,
     Branch,
@@ -684,3 +686,4 @@ gitlab_service_cls = os.environ.get(
     'openhands.integrations.gitlab.gitlab_service.GitLabService',
 )
 GitLabServiceImpl = get_impl(GitLabService, gitlab_service_cls)
+
