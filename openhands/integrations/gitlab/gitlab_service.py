@@ -173,6 +173,15 @@ class GitLabService(BaseGitService, GitService):
             async with httpx.AsyncClient() as client:
                 gitlab_headers = await self._get_gitlab_headers()
 
+                # Generate and log curl command for debugging
+                curl_command = self._generate_curl_command(
+                    url=url,
+                    headers=gitlab_headers,
+                    params=params,
+                    method=method,
+                )
+                logger.debug(f"GitLab API request - curl equivalent: {curl_command}")
+
                 # Make initial request
                 response = await self.execute_request(
                     client=client,
@@ -726,5 +735,6 @@ gitlab_service_cls = os.environ.get(
     'openhands.integrations.gitlab.gitlab_service.GitLabService',
 )
 GitLabServiceImpl = get_impl(GitLabService, gitlab_service_cls)
+
 
 
