@@ -35,8 +35,6 @@ class GitLabService(BaseGitService, GitService):
     The class is instantiated via get_impl() in openhands.server.shared.py.
     """
 
-    BASE_URL = 'https://gitlab.com/api/v4'
-    GRAPHQL_URL = 'https://gitlab.com/api/graphql'
     token: SecretStr = SecretStr('')
     refresh = False
 
@@ -55,16 +53,16 @@ class GitLabService(BaseGitService, GitService):
         if token:
             self.token = token
 
-        if base_domain:
-            # Check if protocol is already included
-            if base_domain.startswith(('http://', 'https://')):
-                # Use the provided protocol
-                self.BASE_URL = f'{base_domain}/api/v4'
-                self.GRAPHQL_URL = f'{base_domain}/api/graphql'
-            else:
-                # Default to https if no protocol specified
-                self.BASE_URL = f'https://{base_domain}/api/v4'
-                self.GRAPHQL_URL = f'https://{base_domain}/api/graphql'
+        # Set URLs based on base_domain or default to gitlab.com
+        gitlab_host = base_domain or 'gitlab.com'
+        if gitlab_host.startswith(('http://', 'https://')):
+            # Use the provided protocol
+            self.BASE_URL = f'{gitlab_host}/api/v4'
+            self.GRAPHQL_URL = f'{gitlab_host}/api/graphql'
+        else:
+            # Default to https if no protocol specified
+            self.BASE_URL = f'https://{gitlab_host}/api/v4'
+            self.GRAPHQL_URL = f'https://{gitlab_host}/api/graphql'
 
     @property
     def provider(self) -> str:

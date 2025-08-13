@@ -436,7 +436,70 @@ async def test_gitlab_search_repositories_single_term_query():
         call_args = mock_request.call_args
         params = call_args[0][1]
 
-        assert params['search'] == 'singleterm'  # No change for single term
+        assert params['search'] == 'singleterm'
+        assert params['membership'] is True
+        assert params['search_namespaces'] is True
 
         # Verify we got the expected repositories
         assert len(repositories) == 1
+
+
+@pytest.mark.asyncio
+async def test_gitlab_self_hosted_http_protocol():
+    """Test that GitLab service correctly handles HTTP protocol for self-hosted instances."""
+    # Test HTTP protocol explicitly specified
+    service_http = GitLabService(
+        token=SecretStr('test-token'), base_domain='http://gitlab.example.com'
+    )
+
+    assert service_http.BASE_URL == 'http://gitlab.example.com/api/v4'
+    assert service_http.GRAPHQL_URL == 'http://gitlab.example.com/api/graphql'
+
+
+@pytest.mark.asyncio
+async def test_gitlab_self_hosted_https_protocol():
+    """Test that GitLab service correctly handles HTTPS protocol for self-hosted instances."""
+    # Test HTTPS protocol explicitly specified
+    service_https = GitLabService(
+        token=SecretStr('test-token'), base_domain='https://gitlab.example.com'
+    )
+
+    assert service_https.BASE_URL == 'https://gitlab.example.com/api/v4'
+    assert service_https.GRAPHQL_URL == 'https://gitlab.example.com/api/graphql'
+
+
+@pytest.mark.asyncio
+async def test_gitlab_self_hosted_default_protocol():
+    """Test that GitLab service defaults to HTTPS when no protocol is specified."""
+    # Test no protocol specified (should default to HTTPS)
+    service_default = GitLabService(
+        token=SecretStr('test-token'), base_domain='gitlab.example.com'
+    )
+
+    assert service_default.BASE_URL == 'https://gitlab.example.com/api/v4'
+    assert service_default.GRAPHQL_URL == 'https://gitlab.example.com/api/graphql'
+
+
+@pytest.mark.asyncio
+async def test_gitlab_self_hosted_url_parsing():
+    """Test that GitLab service correctly parses URLs from self-hosted instances."""
+    service = GitLabService(
+        token=SecretStr('test-token'), base_domain='http://gitlab.internal.company.com'
+    )
+
+    # Test URL parsing with various self-hosted domains
+    test_cases = [
+        ('http://gitlab.internal.company.com/group/repo', 'group/repo'),
+        ('https://gitlab.secure.company.com/org/team/project', 'org/team/project'),
+        ('http://gitlab.example.org/user/simple-repo/', 'user/simple-repo'),
+        (
+            'https://my-gitlab.local/namespace/subgroup/project',
+            'namespace/subgroup/project',
+        ),
+    ]
+
+    for url, expected_path in test_cases:
+        parsed_path = service._parse_gitlab_url(url)
+        assert parsed_path == expected_path, (
+            f'Expected {expected_path}, got {parsed_path}'
+        )

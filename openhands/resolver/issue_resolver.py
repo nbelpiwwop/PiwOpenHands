@@ -124,13 +124,13 @@ class IssueResolver:
 
         base_domain = args.base_domain
         if base_domain is None:
-            base_domain = (
-                'github.com'
-                if platform == ProviderType.GITHUB
-                else 'gitlab.com'
-                if platform == ProviderType.GITLAB
-                else 'bitbucket.org'
-            )
+            # Check environment variables for custom hosts
+            if platform == ProviderType.GITHUB:
+                base_domain = os.getenv('GITHUB_HOST', 'github.com')
+            elif platform == ProviderType.GITLAB:
+                base_domain = os.getenv('GITLAB_HOST', 'gitlab.com')
+            else:  # ProviderType.BITBUCKET
+                base_domain = os.getenv('BITBUCKET_HOST', 'bitbucket.org')
 
         self.output_dir = args.output_dir
         self.issue_type = issue_type
