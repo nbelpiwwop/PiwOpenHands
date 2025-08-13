@@ -60,7 +60,7 @@ async def validate_provider_token(
             curl_command = gitlab_service._generate_curl_command(
                 url=user_url,
                 headers=gitlab_headers,
-                method=gitlab_service.RequestMethod.GET,
+                method=RequestMethod.GET,
             )
             logger.info(f"GitLab token validation failed - curl equivalent: {curl_command}")
         except Exception as curl_error:
@@ -80,5 +80,6 @@ async def validate_provider_token(
     )
 
     return None
+
 
 
