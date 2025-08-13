@@ -1,3 +1,4 @@
+import os
 from pydantic import SecretStr
 
 from openhands.core.logger import openhands_logger as logger
@@ -28,10 +29,15 @@ async def validate_provider_token(
     if token is None:
         return None  # type: ignore[unreachable]
 
+    # If no base_domain provided, check environment variables for each provider
+    github_domain = base_domain or os.getenv('GITHUB_HOST')
+    gitlab_domain = base_domain or os.getenv('GITLAB_HOST')
+    bitbucket_domain = base_domain or os.getenv('BITBUCKET_HOST')
+
     # Try GitHub first
     github_error = None
     try:
-        github_service = GitHubService(token=token, base_domain=base_domain)
+        github_service = GitHubService(token=token, base_domain=github_domain)
         await github_service.verify_access()
         return ProviderType.GITHUB
     except Exception as e:
@@ -40,7 +46,7 @@ async def validate_provider_token(
     # Try GitLab next
     gitlab_error = None
     try:
-        gitlab_service = GitLabService(token=token, base_domain=base_domain)
+        gitlab_service = GitLabService(token=token, base_domain=gitlab_domain)
         await gitlab_service.get_user()
         return ProviderType.GITLAB
     except Exception as e:
@@ -49,7 +55,7 @@ async def validate_provider_token(
     # Try Bitbucket last
     bitbucket_error = None
     try:
-        bitbucket_service = BitBucketService(token=token, base_domain=base_domain)
+        bitbucket_service = BitBucketService(token=token, base_domain=bitbucket_domain)
         await bitbucket_service.get_user()
         return ProviderType.BITBUCKET
     except Exception as e:
