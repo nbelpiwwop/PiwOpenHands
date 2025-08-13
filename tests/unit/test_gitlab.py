@@ -503,3 +503,31 @@ async def test_gitlab_self_hosted_url_parsing():
         assert parsed_path == expected_path, (
             f'Expected {expected_path}, got {parsed_path}'
         )
+
+
+@pytest.mark.asyncio
+async def test_gitlab_self_hosted_quoted_url():
+    """Test that GitLab service correctly handles quoted URLs in base_domain parameter."""
+    # Test with double quotes around HTTP URL
+    service_double_quotes = GitLabService(
+        token=SecretStr('test-token'), base_domain='"http://51.210.127.96:8034"'
+    )
+    
+    assert service_double_quotes.BASE_URL == 'http://51.210.127.96:8034/api/v4'
+    assert service_double_quotes.GRAPHQL_URL == 'http://51.210.127.96:8034/api/graphql'
+    
+    # Test with single quotes around HTTPS URL
+    service_single_quotes = GitLabService(
+        token=SecretStr('test-token'), base_domain="'https://gitlab.example.com:8080'"
+    )
+    
+    assert service_single_quotes.BASE_URL == 'https://gitlab.example.com:8080/api/v4'
+    assert service_single_quotes.GRAPHQL_URL == 'https://gitlab.example.com:8080/api/graphql'
+    
+    # Test with mixed quotes
+    service_mixed_quotes = GitLabService(
+        token=SecretStr('test-token'), base_domain='\'"http://gitlab.internal.com"\'')
+    
+    assert service_mixed_quotes.BASE_URL == 'http://gitlab.internal.com/api/v4'
+    assert service_mixed_quotes.GRAPHQL_URL == 'http://gitlab.internal.com/api/graphql'
+
