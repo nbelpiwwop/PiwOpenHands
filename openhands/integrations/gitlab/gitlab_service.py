@@ -123,6 +123,46 @@ class GitLabService(BaseGitService, GitService):
         """Extract file path from directory item."""
         return item['path']
 
+    def _generate_curl_command(
+        self,
+        url: str,
+        headers: dict[str, Any],
+        params: dict | None = None,
+        method: RequestMethod = RequestMethod.GET,
+        json_data: dict | None = None,
+    ) -> str:
+        """Generate a curl command equivalent for debugging purposes."""
+        # Start with basic curl command
+        curl_parts = ['curl', '-X', method.value.upper()]
+        
+        # Add headers (mask sensitive information)
+        for key, value in headers.items():
+            if key.lower() == 'authorization':
+                # Mask the token for security
+                if 'Bearer' in str(value):
+                    masked_value = 'Bearer <MASKED_TOKEN>'
+                else:
+                    masked_value = '<MASKED_TOKEN>'
+                curl_parts.extend(['-H', f"'{key}: {masked_value}'"])
+            else:
+                curl_parts.extend(['-H', f"'{key}: {value}'"])
+        
+        # Add JSON data for POST requests
+        if json_data:
+            import json
+            curl_parts.extend(['-d', f"'{json.dumps(json_data)}'"])
+        
+        # Build the final URL with query parameters
+        final_url = url
+        if params:
+            query_string = urllib.parse.urlencode(params)
+            final_url = f"{url}?{query_string}"
+        
+        # Add the URL (quoted for safety)
+        curl_parts.append(f"'{final_url}'")
+        
+        return ' '.join(curl_parts)
+
     async def _make_request(
         self,
         url: str,
@@ -686,4 +726,5 @@ gitlab_service_cls = os.environ.get(
     'openhands.integrations.gitlab.gitlab_service.GitLabService',
 )
 GitLabServiceImpl = get_impl(GitLabService, gitlab_service_cls)
+
 
