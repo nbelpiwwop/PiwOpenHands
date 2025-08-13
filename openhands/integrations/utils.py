@@ -6,6 +6,7 @@ from openhands.integrations.bitbucket.bitbucket_service import BitBucketService
 from openhands.integrations.github.github_service import GitHubService
 from openhands.integrations.gitlab.gitlab_service import GitLabService
 from openhands.integrations.provider import ProviderType
+from openhands.integrations.service_types import RequestMethod
 
 
 async def validate_provider_token(
@@ -51,6 +52,19 @@ async def validate_provider_token(
         return ProviderType.GITLAB
     except Exception as e:
         gitlab_error = e
+        # Log curl equivalent command for debugging GitLab token validation failures
+        try:
+            # Generate the curl command for the failed GitLab API call
+            gitlab_headers = await gitlab_service._get_gitlab_headers()
+            user_url = f'{gitlab_service.BASE_URL}/user'
+            curl_command = gitlab_service._generate_curl_command(
+                url=user_url,
+                headers=gitlab_headers,
+                method=RequestMethod.GET,
+            )
+            logger.info(f"GitLab token validation failed - curl equivalent: {curl_command}")
+        except Exception as curl_error:
+            logger.debug(f"Failed to generate curl command for GitLab validation: {curl_error}")
 
     # Try Bitbucket last
     bitbucket_error = None
@@ -66,3 +80,6 @@ async def validate_provider_token(
     )
 
     return None
+
+
+
