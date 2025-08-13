@@ -229,9 +229,54 @@ class BaseGitService(ABC):
         params: dict | None,
         method: RequestMethod = RequestMethod.GET,
     ):
+        # Generate curl equivalent command for debugging
+        curl_cmd = self._generate_curl_command(url, headers, params, method)
+        logger.info(f"{self.provider.value.title()} API request - curl equivalent: {curl_cmd}")
+        
         if method == RequestMethod.POST:
             return await client.post(url, headers=headers, json=params)
         return await client.get(url, headers=headers, params=params)
+
+    def _generate_curl_command(
+        self, url: str, headers: dict, params: dict | None, method: RequestMethod
+    ) -> str:
+        """Generate curl equivalent command for debugging purposes."""
+        import json
+        import urllib.parse
+        
+        curl_parts = ["curl", "-X", method.value.upper()]
+        
+        # Add headers (mask sensitive tokens)
+        for key, value in headers.items():
+            if key.lower() in ['authorization', 'private-token']:
+                # Mask the token for security
+                if 'Bearer' in value:
+                    masked_value = value.replace(value.split(' ')[1], '***MASKED***')
+                elif 'token' in value.lower():
+                    masked_value = '***MASKED***'
+                else:
+                    masked_value = '***MASKED***'
+                curl_parts.extend(["-H", f"'{key}: {masked_value}'"])
+            else:
+                curl_parts.extend(["-H", f"'{key}: {value}'"])
+        
+        # Handle parameters based on method
+        if method == RequestMethod.POST and params:
+            # For POST requests, add JSON data
+            json_data = json.dumps(params, separators=(',', ':'))
+            curl_parts.extend(["-d", f"'{json_data}'"])
+            curl_parts.append(f"'{url}'")
+        else:
+            # For GET requests, add query parameters to URL
+            if params:
+                query_string = urllib.parse.urlencode(params)
+                separator = '&' if '?' in url else '?'
+                full_url = f"{url}{separator}{query_string}"
+            else:
+                full_url = url
+            curl_parts.append(f"'{full_url}'")
+        
+        return " ".join(curl_parts)
 
     def handle_http_status_error(
         self, e: HTTPStatusError
