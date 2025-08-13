@@ -104,15 +104,24 @@ def get_provider_tokens():
     provider_tokens = {}
     if 'GITHUB_TOKEN' in os.environ:
         github_token = SecretStr(os.environ['GITHUB_TOKEN'])
-        provider_tokens[ProviderType.GITHUB] = ProviderToken(token=github_token)
+        github_host = os.environ.get('GITHUB_HOST')
+        provider_tokens[ProviderType.GITHUB] = ProviderToken(
+            token=github_token, host=github_host
+        )
 
     if 'GITLAB_TOKEN' in os.environ:
         gitlab_token = SecretStr(os.environ['GITLAB_TOKEN'])
-        provider_tokens[ProviderType.GITLAB] = ProviderToken(token=gitlab_token)
+        gitlab_host = os.environ.get('GITLAB_HOST')
+        provider_tokens[ProviderType.GITLAB] = ProviderToken(
+            token=gitlab_token, host=gitlab_host
+        )
 
     if 'BITBUCKET_TOKEN' in os.environ:
         bitbucket_token = SecretStr(os.environ['BITBUCKET_TOKEN'])
-        provider_tokens[ProviderType.BITBUCKET] = ProviderToken(token=bitbucket_token)
+        bitbucket_host = os.environ.get('BITBUCKET_HOST')
+        provider_tokens[ProviderType.BITBUCKET] = ProviderToken(
+            token=bitbucket_token, host=bitbucket_host
+        )
 
     # Wrap provider tokens in UserSecrets if any tokens were found
     secret_store = (
